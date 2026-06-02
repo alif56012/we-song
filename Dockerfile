@@ -2,11 +2,19 @@
 FROM oven/bun:1 AS builder
 WORKDIR /app
 
-# Install deps without lifecycle scripts (no .git in Docker, source files not yet present)
+# vp uses a Rust component that initialises an HTTPS client on every invocation.
+# Debian slim (oven/bun base) ships without ca-certificates, which makes
+# rustls-native-certs find zero certs and abort immediately.
+RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
+
+# Install deps with lockfile for reproducibility.
+# --ignore-scripts skips `prepare` (vp config + svelte-kit sync) which needs
+# source files that aren't copied yet; the || echo '' fallback already handles
+# this, but skipping is cleaner and faster.
 COPY package.json bun.lock ./
 RUN bun install --ignore-scripts
 
-# Expose local vp binary
+# Expose local vp binary on PATH
 ENV PATH="/app/node_modules/.bin:$PATH"
 
 # Copy source and build with Vite+
