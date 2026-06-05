@@ -4,6 +4,8 @@
 	import { flip } from 'svelte/animate';
 	import { quintOut } from 'svelte/easing';
 	import type { AppState } from '$lib/types.js';
+	import { locale, t, initLocale, setLocale } from '$lib/i18n';
+	import type { Locale } from '$lib/i18n';
 
 	let myName = $state('');
 	let nameInput = $state('');
@@ -133,10 +135,10 @@
 				urlInput = '';
 			} else {
 				const data = await res.json().catch(() => null);
-				addError = data?.message ?? 'Invalid YouTube URL';
+				addError = data?.message ?? $t.invalidUrl;
 			}
 		} catch {
-			addError = 'Failed to add song';
+			addError = $t.failedAdd;
 		}
 		adding = false;
 	}
@@ -218,6 +220,8 @@
 			nameSet = true;
 		}
 
+		initLocale();
+
 		// Realtime updates via Server-Sent Events (auto-reconnects on drop).
 		es = new EventSource('/api/events');
 		es.onopen = () => (connected = true);
@@ -271,36 +275,50 @@
 				>
 					WE SONG
 				</h1>
-				<p class="mt-1 text-sm text-zinc-500">Team Music Queue</p>
+				<p class="mt-1 text-sm text-zinc-500">{$t.subtitle}</p>
 			</div>
 			<div class="flex items-center gap-2">
-			<a
-				href="https://github.com/DozilDev/we-song"
-				target="_blank"
-				rel="noopener noreferrer"
-				title="View on GitHub — PRs welcome!"
-				class="flex items-center justify-center rounded-full border border-white/5 bg-white/[0.03] p-2 text-zinc-400 backdrop-blur-xl transition hover:border-white/10 hover:bg-white/[0.06] hover:text-white"
-			>
-				<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-					<path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
-				</svg>
-			</a>
-			<div
-				class="flex items-center gap-2 rounded-full border border-white/5 bg-white/[0.03] px-3 py-1.5 text-xs backdrop-blur-xl"
-				title={connected ? 'Live — realtime updates' : 'Reconnecting…'}
-			>
-				<span class="relative flex h-2 w-2">
-					{#if connected}
-						<span
-							class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"
-						></span>
-						<span class="relative inline-flex h-2 w-2 rounded-full bg-emerald-400"></span>
-					{:else}
-						<span class="relative inline-flex h-2 w-2 rounded-full bg-amber-400"></span>
-					{/if}
-				</span>
-				<span class="font-medium text-zinc-400">{connected ? 'Live' : 'Reconnecting'}</span>
-			</div>
+				<a
+					href="https://github.com/DozilDev/we-song"
+					target="_blank"
+					rel="noopener noreferrer"
+					title="View on GitHub — PRs welcome!"
+					class="flex items-center justify-center rounded-full border border-white/5 bg-white/[0.03] p-2 text-zinc-400 backdrop-blur-xl transition hover:border-white/10 hover:bg-white/[0.06] hover:text-white"
+				>
+					<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+						<path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
+					</svg>
+				</a>
+
+				<!-- Language select -->
+				<select
+					value={$locale}
+					onchange={(e) => setLocale((e.currentTarget as HTMLSelectElement).value as Locale)}
+					class="cursor-pointer appearance-none rounded-full border border-white/5 bg-white/[0.03] px-3 py-1.5 text-xs font-medium text-zinc-300 backdrop-blur-xl outline-none transition hover:border-white/10 hover:bg-white/[0.06] hover:text-white"
+				>
+					<option value="en">EN — English</option>
+					<option value="th">TH — ภาษาไทย</option>
+					<option value="th_n">TH — เหนือ</option>
+					<option value="th_s">TH — ใต้</option>
+					<option value="th_e">TH — อีสาน</option>
+				</select>
+
+				<div
+					class="flex items-center gap-2 rounded-full border border-white/5 bg-white/[0.03] px-3 py-1.5 text-xs backdrop-blur-xl"
+					title={connected ? 'Live — realtime updates' : 'Reconnecting…'}
+				>
+					<span class="relative flex h-2 w-2">
+						{#if connected}
+							<span
+								class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"
+							></span>
+							<span class="relative inline-flex h-2 w-2 rounded-full bg-emerald-400"></span>
+						{:else}
+							<span class="relative inline-flex h-2 w-2 rounded-full bg-amber-400"></span>
+						{/if}
+					</span>
+					<span class="font-medium text-zinc-400">{connected ? $t.live : $t.reconnecting}</span>
+				</div>
 			</div>
 		</header>
 
@@ -315,8 +333,8 @@
 				>
 					🎧
 				</div>
-				<h2 class="text-lg font-bold">Welcome</h2>
-				<p class="mt-1 mb-5 text-sm text-zinc-400">Enter your name to join the room</p>
+				<h2 class="text-lg font-bold">{$t.welcome}</h2>
+				<p class="mt-1 mb-5 text-sm text-zinc-400">{$t.welcomeDesc}</p>
 				<form
 					onsubmit={(e) => {
 						e.preventDefault();
@@ -326,7 +344,7 @@
 				>
 					<input
 						bind:value={nameInput}
-						placeholder="Your name…"
+						placeholder={$t.namePlaceholder}
 						maxlength="40"
 						class="flex-1 rounded-xl border border-white/5 bg-zinc-900/80 px-4 py-3 text-sm placeholder-zinc-600 outline-none transition focus:border-violet-500/50 focus:ring-2 focus:ring-violet-500/30"
 					/>
@@ -335,7 +353,7 @@
 						disabled={!nameInput.trim()}
 						class="rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-5 py-3 text-sm font-semibold shadow-lg shadow-violet-900/30 transition hover:brightness-110 active:scale-95 disabled:opacity-40"
 					>
-						Join
+						{$t.join}
 					</button>
 				</form>
 			</div>
@@ -345,7 +363,7 @@
 				class="flex items-center justify-between rounded-2xl border border-white/5 bg-white/[0.03] px-4 py-3 backdrop-blur-xl"
 			>
 				<span class="flex items-center gap-2 text-sm text-zinc-400">
-					Hi, <span class="font-semibold text-white">{myName}</span>
+					{$t.hi} <span class="font-semibold text-white">{myName}</span>
 					{#if isHost}
 						<span
 							class="rounded-full bg-gradient-to-r from-violet-600 to-fuchsia-600 px-2 py-0.5 text-[10px] font-bold tracking-wide shadow"
@@ -358,7 +376,7 @@
 					onclick={() => (nameSet = false)}
 					class="text-xs text-zinc-500 transition hover:text-zinc-300"
 				>
-					Change name
+					{$t.changeName}
 				</button>
 			</div>
 
@@ -370,12 +388,12 @@
 					class="overflow-hidden rounded-2xl border border-white/5 bg-white/[0.03] shadow-2xl backdrop-blur-xl"
 				>
 					<div class="flex items-center justify-between px-5 pt-4">
-						<p class="text-xs font-bold tracking-widest text-violet-300/80 uppercase">Now Playing</p>
+						<p class="text-xs font-bold tracking-widest text-violet-300/80 uppercase">{$t.nowPlaying}</p>
 						{#if !appState.isPaused}
 							<div class="eq" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
 						{:else}
 							<span class="text-[10px] font-semibold tracking-widest text-zinc-500 uppercase"
-								>Paused</span
+								>{$t.paused}</span
 							>
 						{/if}
 					</div>
@@ -385,7 +403,7 @@
 							<!-- Host: real player -->
 							<div class="mb-4 aspect-video overflow-hidden rounded-xl bg-black shadow-inner" use:initPlayer></div>
 							<p class="truncate text-base font-semibold">{np.title}</p>
-							<p class="mt-0.5 text-xs text-zinc-500">added by {np.addedBy}</p>
+							<p class="mt-0.5 text-xs text-zinc-500">{$t.addedBy} {np.addedBy}</p>
 						{:else}
 							<!-- Everyone else: thumbnail + info -->
 							<a
@@ -409,7 +427,7 @@
 								</div>
 								<div class="min-w-0">
 									<p class="truncate text-sm font-semibold group-hover:text-violet-300">{np.title}</p>
-									<p class="mt-1 text-xs text-zinc-500">added by {np.addedBy}</p>
+									<p class="mt-1 text-xs text-zinc-500">{$t.addedBy} {np.addedBy}</p>
 								</div>
 							</a>
 						{/if}
@@ -421,19 +439,19 @@
 									onclick={() => control('pause')}
 									class="flex-1 rounded-xl border border-white/5 bg-white/[0.04] px-4 py-2.5 text-sm font-semibold transition hover:bg-white/[0.08] active:scale-95"
 								>
-									{appState.isPaused ? '▶ Resume' : '⏸ Pause'}
+									{appState.isPaused ? $t.resume : $t.pause}
 								</button>
 								<button
 									onclick={() => control('skip')}
 									class="flex-1 rounded-xl border border-white/5 bg-white/[0.04] px-4 py-2.5 text-sm font-semibold transition hover:bg-white/[0.08] active:scale-95"
 								>
-									⏭ Skip
+									{$t.skip}
 								</button>
 								<button
 									onclick={() => control('stop')}
 									class="rounded-xl border border-red-500/20 bg-red-950/40 px-4 py-2.5 text-sm font-semibold text-red-300 transition hover:bg-red-900/50 active:scale-95"
 								>
-									⏹ Stop
+									{$t.stop}
 								</button>
 							</div>
 						{/if}
@@ -444,13 +462,13 @@
 					class="rounded-2xl border border-white/5 bg-white/[0.03] p-10 text-center backdrop-blur-xl"
 				>
 					<p class="text-3xl opacity-80">🎵</p>
-					<p class="mt-2 text-sm text-zinc-500">No song playing — add one below</p>
+					<p class="mt-2 text-sm text-zinc-500">{$t.noSong}</p>
 				</div>
 			{/if}
 
 			<!-- Add Song -->
 			<div class="rounded-2xl border border-white/5 bg-white/[0.03] p-4 backdrop-blur-xl">
-				<p class="mb-3 text-xs font-bold tracking-widest text-zinc-500 uppercase">Add Song</p>
+				<p class="mb-3 text-xs font-bold tracking-widest text-zinc-500 uppercase">{$t.addSong}</p>
 				<form
 					onsubmit={(e) => {
 						e.preventDefault();
@@ -460,7 +478,7 @@
 				>
 					<input
 						bind:value={urlInput}
-						placeholder="Paste a YouTube link…"
+						placeholder={$t.urlPlaceholder}
 						class="flex-1 rounded-xl border border-white/5 bg-zinc-900/80 px-4 py-2.5 text-sm placeholder-zinc-600 outline-none transition focus:border-violet-500/50 focus:ring-2 focus:ring-violet-500/30"
 					/>
 					<button
@@ -468,7 +486,7 @@
 						disabled={adding || !urlInput.trim()}
 						class="rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-5 py-2.5 text-sm font-semibold shadow-lg shadow-violet-900/30 transition hover:brightness-110 active:scale-95 disabled:opacity-40"
 					>
-						{adding ? 'Adding…' : '+ Add'}
+						{adding ? $t.adding : $t.add}
 					</button>
 				</form>
 				{#if addError}
@@ -479,10 +497,10 @@
 			<!-- Queue -->
 			<div class="rounded-2xl border border-white/5 bg-white/[0.03] p-4 backdrop-blur-xl">
 				<p class="mb-3 text-xs font-bold tracking-widest text-zinc-500 uppercase">
-					Up Next {appState.queue.length > 0 ? `· ${appState.queue.length}` : ''}
+					{$t.upNext}{appState.queue.length > 0 ? ` · ${appState.queue.length}` : ''}
 				</p>
 				{#if appState.queue.length === 0}
-					<p class="py-6 text-center text-sm text-zinc-600">Queue is empty</p>
+					<p class="py-6 text-center text-sm text-zinc-600">{$t.queueEmpty}</p>
 				{:else}
 					<ul class="space-y-2">
 						{#each appState.queue as song, i (song.id)}
@@ -535,7 +553,7 @@
 									>
 										{song.title}
 									</a>
-									<p class="text-xs text-zinc-600">by {song.addedBy}</p>
+									<p class="text-xs text-zinc-600">{$t.by} {song.addedBy}</p>
 								</div>
 
 								<div class="flex shrink-0 items-center gap-1.5">
@@ -544,7 +562,7 @@
 											onclick={() => reorderSong(i, i - 1)}
 											disabled={i === 0}
 											class="flex h-8 w-8 items-center justify-center rounded-lg bg-white/[0.04] text-xs text-zinc-400 transition hover:bg-white/[0.08] hover:text-white disabled:pointer-events-none disabled:opacity-25"
-											title="Move up"
+											title={$t.moveUp}
 										>
 											▲
 										</button>
@@ -552,7 +570,7 @@
 											onclick={() => reorderSong(i, i + 1)}
 											disabled={i === appState.queue.length - 1}
 											class="flex h-8 w-8 items-center justify-center rounded-lg bg-white/[0.04] text-xs text-zinc-400 transition hover:bg-white/[0.08] hover:text-white disabled:pointer-events-none disabled:opacity-25"
-											title="Move down"
+											title={$t.moveDown}
 										>
 											▼
 										</button>
@@ -564,7 +582,7 @@
 											{song.voted
 											? 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow'
 											: 'bg-white/[0.04] text-zinc-300 hover:bg-white/[0.08] hover:text-white'}"
-										title="Upvote"
+										title={$t.upvote}
 									>
 										<span>▲</span>
 										<span>{song.votes}</span>
@@ -574,7 +592,7 @@
 										<button
 											onclick={() => deleteSong(song.id)}
 											class="flex h-8 w-8 items-center justify-center rounded-lg bg-white/[0.04] text-zinc-400 transition hover:bg-red-950/60 hover:text-red-400 active:scale-95"
-											title="Remove"
+											title={$t.remove}
 										>
 											🗑️
 										</button>
@@ -588,27 +606,27 @@
 
 			<!-- Host section -->
 			<div class="rounded-2xl border border-white/5 bg-white/[0.03] p-4 backdrop-blur-xl">
-				<p class="mb-3 text-xs font-bold tracking-widest text-zinc-500 uppercase">Host</p>
+				<p class="mb-3 text-xs font-bold tracking-widest text-zinc-500 uppercase">{$t.host}</p>
 				{#if !appState.host}
-					<p class="mb-3 text-sm text-zinc-400">No host yet — the host plays music through their browser.</p>
+					<p class="mb-3 text-sm text-zinc-400">{$t.noHostDesc}</p>
 					<button
 						onclick={claimHost}
 						class="w-full rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 py-2.5 text-sm font-semibold shadow-lg shadow-violet-900/30 transition hover:brightness-110 active:scale-95"
 					>
-						🎧 Become Host
+						{$t.becomeHost}
 					</button>
 				{:else if isHost}
-					<p class="mb-3 text-sm text-zinc-400">You're the host — music plays through your browser.</p>
+					<p class="mb-3 text-sm text-zinc-400">{$t.youreHostDesc}</p>
 					<button
 						onclick={releaseHost}
 						class="w-full rounded-xl border border-white/5 bg-white/[0.04] px-4 py-2.5 text-sm font-semibold transition hover:bg-white/[0.08] active:scale-95"
 					>
-						Release Host
+						{$t.releaseHost}
 					</button>
 				{:else}
 					<p class="flex items-center gap-2 text-sm text-zinc-400">
 						<span class="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-600 text-xs">🎧</span>
-						<span class="font-semibold text-white">{appState.host}</span> is hosting
+						<span class="font-semibold text-white">{appState.host}</span> {$t.isHosting}
 					</p>
 				{/if}
 			</div>
